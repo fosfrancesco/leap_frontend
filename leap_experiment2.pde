@@ -1,5 +1,6 @@
 import themidibus.*;
 import de.voidplus.leapmotion.*;
+import java.util.Arrays;
 
 // ======================================================
 // Table of Contents:
@@ -19,6 +20,9 @@ boolean is_playing = false;
 int offset = 20;
 float x_position;
 float y_position ;
+int blur_dim = 10;
+float [] old_x = new float[blur_dim];
+float [] old_y = new float[blur_dim];
 
 void setup() {
   size(800, 800);
@@ -32,7 +36,21 @@ void setup() {
   // update ball position based on the size
   x_position = width/2;
   y_position = height/2;
+  
+  Arrays.fill(old_x, width/2);
+  Arrays.fill(old_y, height/2);
+  //old_x = {width/2, width/2, width/2, width/2, width/2, width/2, width/2, width/2, width/2, width/2};
+  //old y = {height/2, height/2,height/2,height/2,height/2,height/2,height/2,height/2,height/2,height/2};
+
 }
+
+void shift_array() {
+  for (int i = 0; i < blur_dim-1; i++) {
+    old_x[blur_dim-1-i] = old_x[blur_dim-2-i];
+    old_y[blur_dim-1-i] = old_y[blur_dim-2-i];
+  }
+}
+
 
 void draw() {
   //background(255);
@@ -60,19 +78,19 @@ void draw() {
     PVector handPosition       = hand.getPosition();
     PVector handStabilized     = hand.getStabilizedPosition();
 
-    println(handPosition.x);
-    println(handPosition.y);
-    println();
-    if ( (handPosition.x < width - 2*offset) & (handPosition.x > 2*offset)) {
-      x_position = handPosition.x;
+    //println(handPosition.x);
+    //println(handPosition.y);
+    //println();
+    if ( (handStabilized.x < width - 2*offset) & (handStabilized.x > 2*offset)) {
+      x_position = handStabilized.x;
     }
-    if ( (handPosition.y < height - 2*offset) & (handPosition.y > 2*offset)) {
-      y_position = handPosition.y;
+    if ( (handStabilized.y < height - 2*offset) & (handStabilized.y > 2*offset)) {
+      y_position = handStabilized.y;
     }
    
     // sending midi messages
-    bus.sendControllerChange(0, 20, round(handPosition.x*127/width));
-    bus.sendControllerChange(0, 21, round((500-handPosition.y)*127/height));
+    bus.sendControllerChange(0, 20, round(x_position*127/width));
+    bus.sendControllerChange(0, 21, round(127-(y_position*127/height)));
 
 
     // ==================================================
@@ -98,24 +116,63 @@ void draw() {
   }
   
   // draw ellipses
-  println(x_position);
-  println(y_position);
+  //println(x_position);
+  //println(y_position);
   fill(204, 102, 0);
   ellipse(x_position, y_position, 20, 20);
+  
+  shift_array();
+  old_x[0] = x_position;
+  old_y[0] = y_position;
+  for (int i = 0; i < 9; i++) {
+    fill(204, 102, 0);
+    ellipse(old_x[i], old_y[i], 20-i, 20-i);
+  }
 }
 
 void keyPressed() {
-  if (key == 'p' || key =='P') {
-    if (is_playing){
-      bus.sendControllerChange(0, 25, 127);
-      is_playing = false;
-      println("Sending stop message");
-    }
-    else{
-      bus.sendControllerChange(0, 24, 127);
-      println("Sending play message");
-      is_playing = true;
-    }
-    
+  switch(key) {
+    case 'p':
+    case 'P':
+      if (is_playing){
+        bus.sendControllerChange(0, 25, 127);
+        is_playing = false;
+        println("Sending stop message");
+      }
+      else{
+        bus.sendControllerChange(0, 24, 127);
+        is_playing = true;
+        println("Sending play message");
+      }
+      break;
+  case '1':
+    println("Sending song selection message to song 1");
+    bus.sendMessage(0xF3, 0);
+    is_playing = false;
+    break;
+  case '2':
+    println("Sending song selection message to song 2");
+    bus.sendMessage(0xF3, 1);
+    is_playing = false;
+    break;
+ case '3':
+    println("Sending song selection message to song 3");
+    bus.sendMessage(0xF3, 2);
+    is_playing = false;
+    break;
+  case '4':
+    println("Sending song selection message to song 4");
+    bus.sendMessage(0xF3, 3);
+    is_playing = false;
+    break;
   }
 }
+
+
+
+void stop() {
+  bus.sendControllerChange(0, 25, 127);
+  is_playing = false;
+  println("Sending stop message");
+  println("Goodbye");
+} 
