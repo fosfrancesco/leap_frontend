@@ -27,6 +27,7 @@ float bar_height;
 int bar_n = 5;
 float[] bar_pos = new float[bar_n];
 float[] bar_width = new float[bar_n];
+int basis_filter_value = 15;
 
 void setup() {
   size(800, 800);
@@ -35,7 +36,7 @@ void setup() {
   println("Available MIDI devices");
   MidiBus.list();
   virtual_bus = new MidiBus(this, "con_espressione" , "con_espressione");
-  piano_bus = new MidiBus(this, -1, "Clavinova");
+  piano_bus = new MidiBus(this, -1, "VirtualMIDISynth #1");
   nanok_bus = new MidiBus(this, "nanoKONTROL2", -1);
   leap = new LeapMotion(this);
   
@@ -92,7 +93,7 @@ void draw() {
    
     // sending midi messages
     virtual_bus.sendControllerChange(0, 20, round(x_position*127/width));
-    virtual_bus.sendControllerChange(0, 21, round(127-(y_position*127/height)));
+    virtual_bus.sendControllerChange(0, 21, round(127-(y_position*127/height*y_division)));
 
 
     // ==================================================
@@ -138,15 +139,21 @@ void draw() {
   textSize(20);
   fill(100);
   textAlign(CENTER, CENTER);
-  text("quiet", width/2 ,  height- offset);
+  text("quiet", width/2 ,  height*y_division+offset);
   text("loud", width/2, offset);
-  text("slow", offset,  height/2);
-  text("fast", width - offset,  height/2);
+  text("slow", offset,  height*y_division/2);
+  text("fast", width - offset,  height*y_division/2);
   
   // basis mixer settings
   fill(0);
+  textAlign(LEFT, TOP);
+  text("tempo", offset,  bar_pos[0]);
+  text("loudness", offset,  bar_pos[1]);
+  text("microtiming", offset,  bar_pos[2]);
+  text("dynamic", offset,  bar_pos[3]);
+  text("articulation", offset,  bar_pos[4]);
   for (int i = 0; i < bar_n; i++) {
-    rect(2*offset,bar_pos[i],bar_width[i], bar_height);
+    rect(8*offset,bar_pos[i],bar_width[i], bar_height);
     //print("printing rectangle i with, start_x, start-Y, width, height ");
     //println(i, 2*offset, bar_pos[i], bar_width[i], bar_height);
   }
@@ -218,35 +225,35 @@ void controllerChange(int channel, int number, int value, long timestamp, String
       piano_bus.sendControllerChange(0, 64, value);
       break;
     case 110:
-      if (value > 10) {
+      if (value > basis_filter_value) {
         tempo= value;
-        bar_width[0] = value * (width - 4*offset) /127;
+        bar_width[0] = value * (width - 10*offset) /127;
         //println("Setting tempo to", bar_width[0], tempo );
       }
       break;
     case 111:
-      if (value > 10) {
+      if (value > basis_filter_value) {
         loudness = value;
-        bar_width[1] = value * (width - 4*offset) /127;
+        bar_width[1] = value * (width - 10*offset) /127;
       }
       break;
     case 112:
-      if (value > 10) {
+      if (value > basis_filter_value) {
         microt = value;
-        bar_width[2] = value * (width - 4*offset) /127;
+        bar_width[2] = value * (width - 10*offset) /127;
         //println("Setting microt to", bar_width[2] );
       }
       break;
     case 113:
-      if (value > 10) {
+      if (value > basis_filter_value) {
         dynamic= value;
-        bar_width[3] = value * (width - 4*offset)/127;
+        bar_width[3] = value * (width - 10*offset)/127;
       }
       break;
     case 114:
-      if (value > 10) {
+      if (value > basis_filter_value) {
         articulation= value;
-        bar_width[4] = value * (width - 4*offset)/127;
+        bar_width[4] = value * (width - 10*offset)/127;
       }
       break;
     }
