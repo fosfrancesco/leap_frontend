@@ -36,7 +36,7 @@ void setup() {
   println("Available MIDI devices");
   MidiBus.list();
   virtual_bus = new MidiBus(this, "con_espressione" , "con_espressione");
-  piano_bus = new MidiBus(this, -1, "VirtualMIDISynth #1");
+  piano_bus = new MidiBus(this, -1, "Yamaha USB-MIDI-1");
   nanok_bus = new MidiBus(this, "nanoKONTROL2", -1);
   leap = new LeapMotion(this);
   
@@ -50,8 +50,8 @@ void setup() {
   bar_starting_pos = height*y_division + 4*offset;
   bar_end_pos = height - 2*offset;
   bar_height = -(bar_starting_pos - bar_end_pos)/bar_n - offset;
-  println(bar_height);
-  println();
+  //println(bar_height);
+  //println();
   for (int i = 0; i < bar_n; i++) {
     bar_pos[i] = bar_starting_pos + bar_height*i + i*offset;
     bar_width[i] = 0;
@@ -93,7 +93,9 @@ void draw() {
    
     // sending midi messages
     virtual_bus.sendControllerChange(0, 20, round(x_position*127/width));
-    virtual_bus.sendControllerChange(0, 21, round(127-(y_position*127/height*y_division)));
+    virtual_bus.sendControllerChange(0, 21, round(127-(y_position*127/(height*y_division))));
+    //print( round(127-(y_position*127/(height*y_division))),height*y_division,y_position,y_position);
+    //println();
 
 
     // ==================================================
@@ -157,7 +159,7 @@ void draw() {
     //print("printing rectangle i with, start_x, start-Y, width, height ");
     //println(i, 2*offset, bar_pos[i], bar_width[i], bar_height);
   }
-  println(tempo, loudness, microt, dynamic, articulation);
+  //println(tempo, loudness, microt, dynamic, articulation);
 }
 
 void keyPressed() {
@@ -261,7 +263,7 @@ void controllerChange(int channel, int number, int value, long timestamp, String
 
 void noteOn(int channel, int pitch, int velocity, long timestamp, String bus_name) {
   // Receive a noteOn
-  piano_bus.sendNoteOn(channel, pitch, velocity);
+  piano_bus.sendNoteOn(channel, pitch, velocity*100/127);
 }
 
 void noteOff(int channel, int pitch, int velocity, long timestamp, String bus_name) {
@@ -271,6 +273,11 @@ void noteOff(int channel, int pitch, int velocity, long timestamp, String bus_na
 
 void stop() {
   virtual_bus.sendControllerChange(0, 25, 127);
+  for (int i = 0; i < 128; i++) {
+    piano_bus.sendNoteOff(0, i, 50); 
+  }
+  virtual_bus.sendControllerChange(0, 64, 0);
+  
   is_playing = false;
   println("Sending stop message");
   println("Goodbye");
